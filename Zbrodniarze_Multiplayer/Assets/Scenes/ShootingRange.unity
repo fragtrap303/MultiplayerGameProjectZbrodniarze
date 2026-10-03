@@ -877,6 +877,11 @@ MonoBehaviour:
   projectilePrefab: {fileID: 59333975986719127, guid: 9835d0d022787b241a6e89a5b172ae29, type: 3}
   firePoint: {fileID: 945796798}
   projectileSpeed: 30
+  fireMode: 0
+  fireRate: 0.5
+  burstCount: 3
+  projectilesPerShot: 8
+  spread: 7
 --- !u!1001 &1890366738
 PrefabInstance:
   m_ObjectHideFlags: 0
