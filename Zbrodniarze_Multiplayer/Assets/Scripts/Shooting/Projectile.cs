@@ -6,6 +6,13 @@ public class Projectile : NetworkBehaviour
     [SerializeField] private float damage = 25f;
     [SerializeField] private float lifetime = 5f;
 
+    private NetworkObject shooter;
+
+    public void SetShooter(NetworkObject shooterObject)
+    {
+        shooter = shooterObject;
+    }
+
     public override void OnNetworkSpawn()
     {
         if (IsServer)
@@ -24,7 +31,11 @@ public class Projectile : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        Debug.Log("Trafiony: " + collision.gameObject.name);
+        Health health = collision.gameObject.GetComponentInParent<Health>();
+        if (health != null && health.NetworkObject != shooter)
+        {
+            health.TakeDamage(damage);
+        }
 
         Despawn();
     }

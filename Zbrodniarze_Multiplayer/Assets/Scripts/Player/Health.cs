@@ -1,27 +1,47 @@
-using UnityEngine;
+ï»¿using UnityEngine;
+using Unity.Netcode;
 
-public class Health : MonoBehaviour
+public class Health : NetworkBehaviour
 {
     [SerializeField] private float maxHealth = 100f;
 
-    private float currentHealth;
+    private readonly NetworkVariable<float> currentHealth = new NetworkVariable<float>();
+    private Renderer[] playerRenderers;
+    private Collider[] playerColliders;
 
     private void Awake()
     {
-        currentHealth = maxHealth;
+        playerRenderers = GetComponentsInChildren<Renderer>(true);
+        playerColliders = GetComponentsInChildren<Collider>(true);
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        currentHealth.OnValueChanged += OnHealthChanged;
+
+        if (IsServer)
+        {
+            currentHealth.Value = maxHealth;
+        }
+
+        ApplyDeathState(currentHealth.Value <= 0f);
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        currentHealth.OnValueChanged -= OnHealthChanged;
     }
 
     public void TakeDamage(float damage)
     {
-        if (damage <= 0f)
+        if (!IsServer || damage <= 0f || currentHealth.Value <= 0f)
             return;
 
-        currentHealth -= damage;
-        currentHealth = Mathf.Max(currentHealth, 0f);
+        currentHealth.Value = Mathf.Max(currentHealth.Value - damage, 0f);
 
-        Debug.Log($"{gameObject.name} HP: {currentHealth}/{maxHealth}");
+        Debug.Log($"{gameObject.name} HP: {currentHealth.Value}/{maxHealth}");
 
-        if (currentHealth <= 0f)
+        if (currentHealth.Value <= 0f)
         {
             Die();
         }
@@ -29,15 +49,43 @@ public class Health : MonoBehaviour
 
     private void Die()
     {
-        Debug.Log($"{gameObject.name} umar³ i nie ¿yje!");
+        Debug.Log($"{gameObject.name} umarÅ‚ i nie Å¼yje.");
+        ApplyDeathState(true);
+    }
 
-       
-        gameObject.SetActive(false); //pod multi - gracz bêdzie znika³ a potem bêdzie respawnowa³ siê w innym miejscu
+    private void OnHealthChanged(float oldHealth, float newHealth)
+    {
+        if (newHealth <= 0f)
+        {
+            Die();
+        }
+    }
+
+    private void ApplyDeathState(bool isDead)
+    {
+        foreach (Renderer playerRenderer in playerRenderers)
+        {
+            playerRenderer.enabled = !isDead;
+        }
+
+        foreach (Collider playerCollider in playerColliders)
+        {
+            playerCollider.enabled = !isDead;
+        }
+    }
+
+    public void Respawn()
+    {
+        if (!IsServer)
+            return;
+
+        currentHealth.Value = maxHealth;
+        ApplyDeathState(false);
     }
 
     public float GetCurrentHealth()
     {
-        return currentHealth;
+        return currentHealth.Value;
     }
 
     public float GetMaxHealth()

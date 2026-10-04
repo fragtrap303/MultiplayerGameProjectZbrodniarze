@@ -107,6 +107,7 @@ public class BaseShooting : NetworkBehaviour
             Quaternion.LookRotation(direction)
         );
 
+        projectile.SetShooter(NetworkObject);
         projectile.NetworkObject.Spawn();
 
         Rigidbody rb = projectile.GetComponent<Rigidbody>();
