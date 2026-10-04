@@ -1,6 +1,8 @@
 using UnityEngine;
+using Unity.Netcode;
+using UnityEngine.Networking;
 
-public class BaseShooting : MonoBehaviour
+public class BaseShooting : NetworkBehaviour
 {
     [Header("Projectile")]
     [SerializeField] private Projectile projectilePrefab;
@@ -21,6 +23,7 @@ public class BaseShooting : MonoBehaviour
 
     private void Update()
     {
+        if(!IsOwner) return;
         switch (fireMode)
         {
             case FireMode.Single:
@@ -92,11 +95,19 @@ public class BaseShooting : MonoBehaviour
     {
         Vector3 direction = GetShootDirection();
 
+        ShootProjectileServerRpc(firePoint.position, direction);
+    }
+
+    [ServerRpc]
+    private void ShootProjectileServerRpc(Vector3 position, Vector3 direction)
+    {
         Projectile projectile = Instantiate(
             projectilePrefab,
-            firePoint.position,
+            position,
             Quaternion.LookRotation(direction)
         );
+
+        projectile.NetworkObject.Spawn();
 
         Rigidbody rb = projectile.GetComponent<Rigidbody>();
 

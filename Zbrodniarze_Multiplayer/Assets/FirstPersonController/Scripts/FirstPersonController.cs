@@ -1,8 +1,10 @@
 namespace EasyPeasyFirstPersonController
 {
     using UnityEngine;
+    using Unity.Netcode;
+    using UnityEngine.Networking;
 
-    public partial class FirstPersonController : MonoBehaviour
+    public partial class FirstPersonController : NetworkBehaviour
     {
         [Header("Settings")]
         public float walkSpeed = 3f;
@@ -100,6 +102,31 @@ namespace EasyPeasyFirstPersonController
         [Header("Debug")]
         public bool currentStateDebug = true;
 
+        [SerializeField] private AudioListener audioListener;
+
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+
+            bool isLocalPlayer = IsOwner;
+
+            // Enable/disable the Camera component (or fallback to toggling the GameObject)
+            Camera cameraComp = playerCamera != null ? playerCamera.GetComponent<Camera>() : null;
+            if (cameraComp != null)
+                cameraComp.enabled = isLocalPlayer;
+            else if (playerCamera != null)
+                playerCamera.gameObject.SetActive(isLocalPlayer);
+
+            if (audioListener != null)
+                audioListener.enabled = isLocalPlayer;
+
+            // Disable input and local-only components for remote players.
+            var controller = GetComponent<FirstPersonController>();
+            if (controller != null)
+                controller.enabled = isLocalPlayer;
+        }
+
         void OnGUI()
         {
             if (currentState != null && Application.isEditor && currentStateDebug)
@@ -108,6 +135,8 @@ namespace EasyPeasyFirstPersonController
 
         private void Awake()
         {
+            if (audioListener == null)
+                audioListener = GetComponentInChildren<AudioListener>();
             cam = playerCamera.GetComponent<Camera>();
             targetFov = normalFov;
             targetCameraY = standingCameraHeight;
@@ -128,6 +157,7 @@ namespace EasyPeasyFirstPersonController
 
         private void Update()
         {
+            if (!IsOwner) return;    
             if (currentLedgeCooldown > 0)
                 currentLedgeCooldown -= Time.deltaTime;
 

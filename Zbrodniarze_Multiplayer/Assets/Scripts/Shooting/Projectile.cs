@@ -1,19 +1,39 @@
 using UnityEngine;
+using Unity.Netcode;
 
-public class Projectile : MonoBehaviour
+public class Projectile : NetworkBehaviour
 {
     [SerializeField] private float damage = 25f;
     [SerializeField] private float lifetime = 5f;
 
-    private void Start()
+    public override void OnNetworkSpawn()
     {
-        Destroy(gameObject, lifetime);
+        if (IsServer)
+        {
+            Invoke(nameof(Despawn), lifetime);
+        }
+
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = !IsServer;
+        }
     }
 
     private void OnCollisionEnter(Collision collision)
     {
+        if (!IsServer) return;
+
         Debug.Log("Trafiony: " + collision.gameObject.name);
 
-        Destroy(gameObject);
+        Despawn();
+    }
+
+    private void Despawn()
+    {
+        if (NetworkObject.IsSpawned)
+        {
+            NetworkObject.Despawn(true);
+        }
     }
 }
