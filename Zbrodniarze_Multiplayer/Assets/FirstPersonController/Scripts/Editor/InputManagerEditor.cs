@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace EasyPeasyFirstPersonController.EditorScripts
 {
-    [CustomEditor(typeof(InputManager))]
+    [CustomEditor(typeof(inputManager))]
     public class InputManagerEditor : Editor
     {
         public override void OnInspectorGUI()

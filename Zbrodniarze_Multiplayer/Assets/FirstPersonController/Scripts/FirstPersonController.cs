@@ -34,6 +34,8 @@ namespace EasyPeasyFirstPersonController
         public Transform cameraParent;
         public Transform groundCheck;
         public LayerMask groundMask;
+        public Animator playerAnimator;
+        public inputManager inputManager;
 
         [HideInInspector] public CharacterController characterController;
         [HideInInspector] public IInputManager input;
@@ -162,6 +164,18 @@ namespace EasyPeasyFirstPersonController
                 currentLedgeCooldown -= Time.deltaTime;
 
             isGrounded = characterController.isGrounded || Physics.CheckSphere(groundCheck.position, characterController.radius * 0.9f, groundMask, QueryTriggerInteraction.Ignore);
+
+            Vector2 movement = inputManager.moveInput;
+            float targetBlend;
+
+            if (movement.y != 0f)
+                targetBlend = movement.y;
+            else if (movement.x != 0f)
+                targetBlend = movement.x;
+            else
+                targetBlend = 0.5f;
+            
+            playerAnimator.SetFloat("Blend", targetBlend, 0.1f, Time.deltaTime);
 
             currentState.UpdateState();
             HandleRotation();

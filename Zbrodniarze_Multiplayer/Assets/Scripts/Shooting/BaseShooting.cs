@@ -18,6 +18,9 @@ public class BaseShooting : NetworkBehaviour
     [SerializeField] private int projectilesPerShot = 1;
     [SerializeField] private float spread = 0f;
 
+    [Header("References")]
+    [SerializeField] private Animator playerAnimator;
+
     private float nextFireTime;
     private bool isBursting;
 
@@ -87,6 +90,7 @@ public class BaseShooting : NetworkBehaviour
     {
         for (int i = 0; i < projectilesPerShot; i++)
         {
+            playerAnimator.SetTrigger("didShoot");
             ShootProjectile();
         }
     }

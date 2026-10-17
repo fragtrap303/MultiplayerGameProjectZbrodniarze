@@ -5,7 +5,7 @@ namespace EasyPeasyFirstPersonController
     using UnityEngine.InputSystem;
 #endif
 
-    public class InputManager : MonoBehaviour, IInputManager
+    public class inputManager : MonoBehaviour, IInputManager
     {
         public Vector2 moveInput
         {
