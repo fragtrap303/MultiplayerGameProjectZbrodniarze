@@ -10,7 +10,7 @@ public class KnockbackReceiver : MonoBehaviour
 
     private void Awake()
     {
-        characterController = GetComponent<CharacterController>();
+        characterController = GetComponent<CharacterController>(); 
     }
 
     private void Update()

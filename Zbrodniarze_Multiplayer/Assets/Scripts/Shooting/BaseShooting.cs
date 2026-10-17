@@ -18,15 +18,40 @@ public class BaseShooting : NetworkBehaviour
     [SerializeField] private int projectilesPerShot = 1;
     [SerializeField] private float spread = 0f;
 
+    [Header("Ammo")]
+    [SerializeField] private int magazineSize = 30;
+    [SerializeField] private int startingReserveAmmo = 90;
+    [SerializeField] private float reloadTime = 2f;
+    [SerializeField] private KeyCode reloadKey = KeyCode.R;
+    [SerializeField] private bool autoReloadWhenEmpty = true;
+
     [Header("References")]
     [SerializeField] private Animator playerAnimator;
 
     private float nextFireTime;
     private bool isBursting;
+    private bool isReloading;
+    private int currentAmmo;
+    private int reserveAmmo;
+    public int CurrentAmmo => currentAmmo;
+    public int ReserveAmmo => reserveAmmo;
+    public int MagazineSize => magazineSize;
+    public bool IsReloading => isReloading;
+
+    public event System.Action<int, int> AmmoChanged;
+    public event System.Action<bool> ReloadStateChanged;
 
     private void Update()
     {
         if(!IsOwner) return;
+       
+        if (Input.GetKeyDown(reloadKey))
+        {
+            RequestReloadServerRpc();
+        }
+
+        if (isReloading)
+            return;
         switch (fireMode)
         {
             case FireMode.Single:
@@ -41,6 +66,17 @@ public class BaseShooting : NetworkBehaviour
                 HandleBurstFire();
                 break;
         }
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        if (IsServer)
+        {
+            currentAmmo = magazineSize;
+            reserveAmmo = startingReserveAmmo;
+            NotifyAmmoChanged();
+        }
+
     }
 
     private void HandleSingleFire()
@@ -88,10 +124,23 @@ public class BaseShooting : NetworkBehaviour
 
     private void Shoot()
     {
+        if (isReloading || currentAmmo <= 0)
+            return;
+
+        currentAmmo--;
+        NotifyAmmoChanged();
+
         for (int i = 0; i < projectilesPerShot; i++)
         {
-            playerAnimator.SetTrigger("didShoot");
+            if (playerAnimator != null)
+                playerAnimator.SetTrigger("didShoot");
+
             ShootProjectile();
+        }
+
+        if (currentAmmo <= 0 && autoReloadWhenEmpty && reserveAmmo > 0)
+        {
+            RequestReloadServerRpc();
         }
     }
 
@@ -136,5 +185,42 @@ public class BaseShooting : NetworkBehaviour
         }
 
         return direction.normalized;
+    }
+    [ServerRpc]
+    private void RequestReloadServerRpc()
+    {
+        if (isReloading ||
+            currentAmmo >= magazineSize ||
+            reserveAmmo <= 0)
+            return;
+
+        StartCoroutine(ReloadRoutine());
+    }
+
+    private void NotifyAmmoChanged()
+    {
+        AmmoChanged?.Invoke(currentAmmo, reserveAmmo);
+    }
+
+    private System.Collections.IEnumerator ReloadRoutine()
+    {
+        isReloading = true;
+        ReloadStateChanged?.Invoke(true);
+
+        if (playerAnimator != null)
+            playerAnimator.SetTrigger("didReload");
+
+        yield return new WaitForSeconds(reloadTime);
+
+        int neededAmmo = magazineSize - currentAmmo;
+        int ammoToLoad = Mathf.Min(neededAmmo, reserveAmmo);
+
+        currentAmmo += ammoToLoad;
+        reserveAmmo -= ammoToLoad;
+       
+        NotifyAmmoChanged();
+        
+        isReloading = false;
+        ReloadStateChanged?.Invoke(false);
     }
 }
