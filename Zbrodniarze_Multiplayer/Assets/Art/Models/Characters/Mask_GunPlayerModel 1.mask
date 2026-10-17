@@ -28,13 +28,13 @@ AvatarMask:
   - m_Path: F_PlayerModel/Bone/Bone.005
     m_Weight: 1
   - m_Path: F_PlayerModel/Bone/Bone.005/Bone.005_L
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: F_PlayerModel/Bone/Bone.005/Bone.005_L/Bone.005_L.001
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: F_PlayerModel/Bone/Bone.005/Bone.005_L/Bone.005_L.001/Bone.005_L.002
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: F_PlayerModel/Bone/Bone.005/Bone.005_L/Bone.005_L.001/Bone.005_L.002/Bone.005_L.003
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: F_PlayerModel/Bone/Bone.005/Bone.005_R
     m_Weight: 1
   - m_Path: F_PlayerModel/Bone/Bone.005/Bone.005_R/Bone.005_R.001
@@ -42,6 +42,14 @@ AvatarMask:
   - m_Path: F_PlayerModel/Bone/Bone.005/Bone.005_R/Bone.005_R.001/Bone.005_R.002
     m_Weight: 1
   - m_Path: F_PlayerModel/Bone/Bone.005/Bone.005_R/Bone.005_R.001/Bone.005_R.002/Bone.005_R.003
+    m_Weight: 1
+  - m_Path: F_PlayerModel/Bone/Bone.005/Bone.005_R/Bone.005_R.001/Bone.005_R.002/Bone.005_R.003/Bone.005_R.007
+    m_Weight: 0
+  - m_Path: F_PlayerModel/Bone/Bone.005/Bone.005_R/Bone.005_R.001/Bone.005_R.002/Bone.005_R.003/Bone.009
+    m_Weight: 0
+  - m_Path: F_PlayerModel/Bone/Bone.005/Bone.005_R/Bone.005_R.001/Bone.005_R.002/Bone.005_R.003/Bone.009/Bone.010
+    m_Weight: 0
+  - m_Path: F_PlayerModel/Bone/Bone.005/Bone.005_R/Bone.005_R.001/Bone.005_R.002/Bone.005_R.003/Bone.009/Bone.011
     m_Weight: 0
   - m_Path: F_PlayerModel/Bone/Bone.005/Bone.006
     m_Weight: 0
