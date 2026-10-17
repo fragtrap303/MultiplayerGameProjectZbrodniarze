@@ -27,6 +27,7 @@ public class BaseShooting : NetworkBehaviour
 
     [Header("References")]
     [SerializeField] private Animator playerAnimator;
+    [SerializeField] private Animator FPSAnimator;
 
     private float nextFireTime;
     private bool isBursting;
@@ -133,7 +134,12 @@ public class BaseShooting : NetworkBehaviour
         for (int i = 0; i < projectilesPerShot; i++)
         {
             if (playerAnimator != null)
+            {
+                FPSAnimator.SetTrigger("didShoot");
                 playerAnimator.SetTrigger("didShoot");
+            }
+                
+
 
             ShootProjectile();
         }
@@ -208,7 +214,11 @@ public class BaseShooting : NetworkBehaviour
         ReloadStateChanged?.Invoke(true);
 
         if (playerAnimator != null)
+        {
+            FPSAnimator.SetTrigger("didReload");
             playerAnimator.SetTrigger("didReload");
+        }
+           
 
         yield return new WaitForSeconds(reloadTime);
 

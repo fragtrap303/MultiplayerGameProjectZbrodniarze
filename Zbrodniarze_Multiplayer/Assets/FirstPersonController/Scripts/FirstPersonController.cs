@@ -35,6 +35,7 @@ namespace EasyPeasyFirstPersonController
         public Transform groundCheck;
         public LayerMask groundMask;
         public Animator playerAnimator;
+        public Animator FPSAnimator;
         public inputManager inputManager;
 
         [HideInInspector] public CharacterController characterController;
@@ -176,6 +177,7 @@ namespace EasyPeasyFirstPersonController
                 targetBlend = 0.5f;
             
             playerAnimator.SetFloat("Blend", targetBlend, 0.1f, Time.deltaTime);
+            FPSAnimator.SetFloat("Blend", targetBlend, 0.1f, Time.deltaTime);
 
             currentState.UpdateState();
             HandleRotation();
