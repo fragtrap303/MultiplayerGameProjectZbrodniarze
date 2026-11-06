@@ -14,6 +14,8 @@ public class MultiplayerUIManager : MonoBehaviour
     [SerializeField] private Button joinConfirmButton;
     [SerializeField] private Button joinCancelButton;
 
+    [SerializeField] private TextMeshProUGUI joinCodeDisplayText;
+
     private void Awake()
     {
         ServerButton.onClick.AddListener(() =>
@@ -47,6 +49,39 @@ public class MultiplayerUIManager : MonoBehaviour
         {
             joinCodeInputPanel.SetActive(false);
         }
+
+        // Clear display text initially
+        if (joinCodeDisplayText != null)
+        {
+            joinCodeDisplayText.text = "No join code available";
+            Debug.Log("joinCodeDisplayText is assigned");
+        }
+        else
+        {
+            Debug.LogError("joinCodeDisplayText is NOT assigned in inspector!");
+        }
+    }
+
+    private void Start()
+    {
+        // Subscribe to join code events in Start to ensure TestRelay is initialized
+        if (TestRelay.Instance != null)
+        {
+            TestRelay.Instance.OnJoinCodeReceived += DisplayJoinCode;
+            Debug.Log("Successfully subscribed to OnJoinCodeReceived event");
+        }
+        else
+        {
+            Debug.LogWarning("TestRelay.Instance is null in Start!");
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (TestRelay.Instance != null)
+        {
+            TestRelay.Instance.OnJoinCodeReceived -= DisplayJoinCode;
+        }
     }
 
     private async void HostRelayGame()
@@ -58,6 +93,21 @@ public class MultiplayerUIManager : MonoBehaviour
         else
         {
             Debug.LogError("TestRelay instance not found!");
+        }
+    }
+
+    private void DisplayJoinCode(string joinCode)
+    {
+        Debug.Log($"DisplayJoinCode called with: {joinCode}");
+
+        if (joinCodeDisplayText != null)
+        {
+            joinCodeDisplayText.text = $"Join Code: {joinCode}";
+            Debug.Log($"Updated UI text to: Join Code: {joinCode}");
+        }
+        else
+        {
+            Debug.LogError("joinCodeDisplayText is null in DisplayJoinCode!");
         }
     }
 

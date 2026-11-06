@@ -7,10 +7,13 @@ using System.Threading.Tasks;
 using Unity.Netcode;
 using Unity.Networking.Transport.Relay;
 using Unity.Netcode.Transports.UTP;
+using System;
 
 public class TestRelay : MonoBehaviour
 {
     public static TestRelay Instance { get; private set; }
+
+    public event Action<string> OnJoinCodeReceived;
 
     private async void Start()
     {
@@ -36,6 +39,8 @@ public class TestRelay : MonoBehaviour
             string joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
 
             Debug.Log($"Kod dołączenia: {joinCode}");
+
+            OnJoinCodeReceived?.Invoke(joinCode);
 
             RelayServerData relayServerData = new RelayServerData(allocation, "dtls");
             NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayServerData);
