@@ -18,6 +18,7 @@ public class TestLobby : MonoBehaviour
     private bool isHost = false;
     private float lobbyRefreshTimer = 0f;
     private const float LOBBY_REFRESH_INTERVAL = 1.5f; // Refresh lobby every 1.5 seconds
+    private string lastRelayCode = ""; // Track if relay code changed
 
     private async void Start()
     {
@@ -87,9 +88,13 @@ public class TestLobby : MonoBehaviour
             {
                 LobbyRelayManager.Instance.HostStartGame(currentLobby);
             }
+            else if (!isHost && currentLobby != null)
+            {
+                Debug.LogWarning("Czekaj aż host zaplanuje grę!");
+            }
             else
             {
-                Debug.LogWarning("Tylko host może rozpocząć grę!");
+                Debug.LogWarning("Musisz być w lobby!");
             }
         }
 
@@ -103,6 +108,22 @@ public class TestLobby : MonoBehaviour
         try
         {
             currentLobby = await LobbyService.Instance.GetLobbyAsync(currentLobby.Id);
+
+            // Sprawdź czy kod relay się pojawił w danych lobby (client detection)
+            if (!isHost && currentLobby.Data.ContainsKey("RelayJoinCode"))
+            {
+                string relayCode = currentLobby.Data["RelayJoinCode"].Value;
+
+                // Test czy kod relay się zmienił i nie jest pusty
+                if (!string.IsNullOrEmpty(relayCode) && relayCode != lastRelayCode)
+                {
+                    lastRelayCode = relayCode;
+                    Debug.Log($"Client detected relay code: {relayCode}. Joining game...");
+
+                    // Klient dołącza do gry z kodem relay
+                    LobbyRelayManager.Instance.ClientJoinGame(relayCode);
+                }
+            }
         }
         catch (LobbyServiceException e)
         {
@@ -142,7 +163,8 @@ public class TestLobby : MonoBehaviour
                 Player = GetPlayer(),
                 Data = new Dictionary<string, DataObject>
                 {
-                    { "NumberOfRounds", new DataObject(DataObject.VisibilityOptions.Public, "5", DataObject.IndexOptions.S1) }
+                    { "NumberOfRounds", new DataObject(DataObject.VisibilityOptions.Public, "5", DataObject.IndexOptions.S1) },
+                    { "RelayJoinCode", new DataObject(DataObject.VisibilityOptions.Public, "", DataObject.IndexOptions.S1) }
                 }
             };
 
@@ -153,7 +175,7 @@ public class TestLobby : MonoBehaviour
             isHost = true;
 
             Debug.Log("Stworzyłem lobby: " + lobby.Name);
-            PrintPlayers(currentLobby);  // Print immediately after creation
+            PrintPlayers(currentLobby);
         }
         catch (LobbyServiceException e)
         {
@@ -275,7 +297,35 @@ public class TestLobby : MonoBehaviour
         }
     }
 
-    // Publiczny dostęp do aktualnego lobby i statusu hosta
+    // Wezwnae przez hosta po utworzeniu relay, aby zaktualizować lobby z kodem dołączenia
+    public async Task UpdateLobbyWithRelayCode(string relayCode)
+    {
+        if (!isHost || currentLobby == null)
+        {
+            Debug.LogError("Tylko host może aktualizować lobby!");
+            return;
+        }
+
+        try
+        {
+            UpdateLobbyOptions updateOptions = new UpdateLobbyOptions
+            {
+                Data = new Dictionary<string, DataObject>
+                {
+                    { "RelayJoinCode", new DataObject(DataObject.VisibilityOptions.Public, relayCode, DataObject.IndexOptions.S1) }
+                }
+            };
+
+            currentLobby = await LobbyService.Instance.UpdateLobbyAsync(currentLobby.Id, updateOptions);
+            Debug.Log($"Lobby updated with relay code: {relayCode}");
+        }
+        catch (LobbyServiceException e)
+        {
+            Debug.LogError("Błąd przy aktualizacji lobby: " + e);
+        }
+    }
+
+    // Public accessors for LobbyRelayManager
     public Lobby GetCurrentLobby() => currentLobby;
     public bool IsHost() => isHost;
     public string GetPlayerName() => playerName;

@@ -94,6 +94,14 @@ public class LobbyRelayManager : MonoBehaviour
     private async void CreateRelayAsHost()
     {
         await TestRelay.Instance.CreateRelayAsHost();
+
+        // After relay is created, get the join code and share it via lobby
+        string joinCode = TestRelay.Instance.GetCurrentJoinCode();
+        if (!string.IsNullOrEmpty(joinCode))
+        {
+            await TestLobby.Instance.UpdateLobbyWithRelayCode(joinCode);
+            Debug.Log("Relay join code shared with clients!");
+        }
     }
 
     /// <summary>
@@ -145,7 +153,7 @@ public class LobbyRelayManager : MonoBehaviour
             yield return null;
         }
 
-        Debug.Log("Scena gry wczytana...");
+        Debug.Log("Scena gry wczytana! Dołacz do relaya...");
 
         // Small delay to ensure scene is fully initialized
         yield return new WaitForSeconds(0.5f);
