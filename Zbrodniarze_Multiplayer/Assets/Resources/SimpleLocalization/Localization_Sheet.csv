@@ -1,0 +1,13 @@
+key,en,pl,de
+# --- Main menu ---,,,
+menu.start,Start game,Rozpocznij grę,Spiel starten
+menu.options,Options,Opcje,Optionen
+menu.quit,Quit,Wyjdź,Beenden
+menu.language,Language,Język,Sprache
+# --- HUD ---,,,
+hud.gold,Gold: {gold_amount},Złoto: {gold_amount},Gold: {gold_amount}
+hud.level,"Round {round}, wave {wave}","Runda {round}, fala {wave}","Level {level}, Welle {wave}"
+# --- Dialogs ---,,,
+dialog.quit_confirm,"Are you sure you want to quit? ↵ 
+If you leave, you will lose!","Czy na pewno chcesz wyjść? ↵ Jeżeli wyjdziesz, przegrasz!","Möchtest du wirklich gehen? ↵ Wenn du gehst, verlierst du!"
+dialog.quote,"The sign says ""Danger""","Tabliczka mówi ""Niebezpieczeństwo""","Das Schild sagt ""Gefahr"""
