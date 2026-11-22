@@ -5,7 +5,7 @@ using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Manages the connection between Lobby and Relay systems.
-/// Coordinates the flow: Lobby -> Relay -> Game Scene
+/// Coordinates the flow: Lobby -> Load Gameplay Scene -> Relay -> Game
 /// </summary>
 public class LobbyRelayManager : MonoBehaviour
 {
@@ -41,9 +41,9 @@ public class LobbyRelayManager : MonoBehaviour
 
     /// <summary>
     /// Called by host when pressing 'G' to start the game
-    /// Initiates relay creation and prepares game start
+    /// Loads gameplay scene first, then initiates relay
     /// </summary>
-    public async void HostStartGame(Lobby lobby)
+    public void HostStartGame(Lobby lobby)
     {
         if (isTransitioningToGame)
         {
@@ -59,40 +59,57 @@ public class LobbyRelayManager : MonoBehaviour
 
         isTransitioningToGame = true;
 
-        Debug.Log("Host rozpoczyna grę! Tworzę relay allocation...");
+        Debug.Log("Host rozpoczyna grę! Ładuję scenę gry...");
 
-        // Create relay allocation as host
-        await TestRelay.Instance.CreateRelayAsHost();
-
-        // From here, OnRelayConnected event will handle scene loading
+        // Load gameplay scene first, THEN create relay after scene is loaded
+        StartCoroutine(LoadSceneThenCreateRelay());
     }
 
     /// <summary>
-    /// Called when relay connection is established (for both host and clients)
-    /// Loads the gameplay scene
+    /// Coroutine that loads the scene and waits for it to load before creating relay
+    /// </summary>
+    private System.Collections.IEnumerator LoadSceneThenCreateRelay()
+    {
+        // Load the gameplay scene
+        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(GAMEPLAY_SCENE);
+
+        // Wait for scene to load
+        while (!asyncLoad.isDone)
+        {
+            yield return null;
+        }
+
+        Debug.Log("Gameplay scene loaded! Creating relay allocation...");
+
+        // Small delay to ensure scene is fully initialized
+        yield return new WaitForSeconds(0.5f);
+
+        // Now create relay (NetworkManager should exist by now)
+        CreateRelayAsHost();
+    }
+
+    /// <summary>
+    /// Creates relay allocation after scene is loaded
+    /// </summary>
+    private async void CreateRelayAsHost()
+    {
+        await TestRelay.Instance.CreateRelayAsHost();
+    }
+
+    /// <summary>
+    /// Called when relay connection is established
     /// </summary>
     private void OnRelayConnected()
     {
-        Debug.Log("Relay connection established! Loading gameplay scene...");
-
-        // Small delay to ensure network setup is complete
-        Invoke(nameof(LoadGameplayScene), 0.5f);
-    }
-
-    /// <summary>
-    /// Loads the gameplay scene where actual game happens
-    /// </summary>
-    private void LoadGameplayScene()
-    {
-        Debug.Log($"Loading scene: {GAMEPLAY_SCENE}");
-        SceneManager.LoadScene(GAMEPLAY_SCENE);
+        Debug.Log("Relay connection established!");
+        // Scene is already loaded, so we're good to go
     }
 
     /// <summary>
     /// Called by clients when they receive relay join code and need to connect
-    /// In future, this can be triggered by UI or automatic detection
+    /// Loads scene first, then joins relay
     /// </summary>
-    public async void ClientJoinGame(string relayJoinCode)
+    public void ClientJoinGame(string relayJoinCode)
     {
         if (isTransitioningToGame)
         {
@@ -110,10 +127,39 @@ public class LobbyRelayManager : MonoBehaviour
 
         Debug.Log($"Client dołącza do gry z kodem: {relayJoinCode}");
 
-        // Join relay as client
-        await TestRelay.Instance.JoinRelayAsClient(relayJoinCode);
+        // Load gameplay scene first, THEN join relay
+        StartCoroutine(LoadSceneThenJoinRelay(relayJoinCode));
+    }
 
-        // From here, OnRelayConnected event will handle scene loading
+    /// <summary>
+    /// Coroutine that loads the scene and waits for it to load before joining relay
+    /// </summary>
+    private System.Collections.IEnumerator LoadSceneThenJoinRelay(string joinCode)
+    {
+        // Load the gameplay scene
+        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(GAMEPLAY_SCENE);
+
+        // Wait for scene to load
+        while (!asyncLoad.isDone)
+        {
+            yield return null;
+        }
+
+        Debug.Log("Scena gry wczytana...");
+
+        // Small delay to ensure scene is fully initialized
+        yield return new WaitForSeconds(0.5f);
+
+        // Now join relay (NetworkManager should exist by now)
+        JoinRelayAsClient(joinCode);
+    }
+
+    /// <summary>
+    /// Joins relay as client after scene is loaded
+    /// </summary>
+    private async void JoinRelayAsClient(string joinCode)
+    {
+        await TestRelay.Instance.JoinRelayAsClient(joinCode);
     }
 
     /// <summary>

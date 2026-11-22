@@ -16,6 +16,8 @@ public class TestLobby : MonoBehaviour
     private float heartbeatTimer;
     private string playerName;
     private bool isHost = false;
+    private float lobbyRefreshTimer = 0f;
+    private const float LOBBY_REFRESH_INTERVAL = 1.5f; // Refresh lobby every 1.5 seconds
 
     private async void Start()
     {
@@ -36,7 +38,18 @@ public class TestLobby : MonoBehaviour
 
     private void Update()
     {
-        // Placeholder inputy do testowania funkcji lobby
+        // Auto-refresh lobby every few seconds to see updated player list
+        if (currentLobby != null)
+        {
+            lobbyRefreshTimer += Time.deltaTime;
+            if (lobbyRefreshTimer >= LOBBY_REFRESH_INTERVAL)
+            {
+                lobbyRefreshTimer = 0f;
+                RefreshLobby();
+            }
+        }
+
+        // Placeholder funkcje do testowania - zmień w przyszłości na UI
         // C - Create Lobby (Host)
         if (Input.GetKeyDown(KeyCode.C))
         {
@@ -83,6 +96,20 @@ public class TestLobby : MonoBehaviour
         HandleLobbyHeartbeat();
     }
 
+    private async Task RefreshLobby()
+    {
+        if (currentLobby == null) return;
+
+        try
+        {
+            currentLobby = await LobbyService.Instance.GetLobbyAsync(currentLobby.Id);
+        }
+        catch (LobbyServiceException e)
+        {
+            Debug.LogError("Błąd przy odświeżaniu lobby: " + e);
+        }
+    }
+
     private async Task HandleLobbyHeartbeat()
     {
         if (hostLobby != null)
@@ -126,6 +153,7 @@ public class TestLobby : MonoBehaviour
             isHost = true;
 
             Debug.Log("Stworzyłem lobby: " + lobby.Name);
+            PrintPlayers(currentLobby);  // Print immediately after creation
         }
         catch (LobbyServiceException e)
         {
@@ -172,6 +200,7 @@ public class TestLobby : MonoBehaviour
             isHost = false;
 
             Debug.Log("Dołączyłem do lobby: " + lobbyCode);
+            PrintPlayers(currentLobby);
         }
         catch (LobbyServiceException e)
         {
