@@ -9,53 +9,76 @@ using UnityEngine;
 
 public class TestLobby : MonoBehaviour
 {
+    public static TestLobby Instance { get; private set; }
 
     private Lobby hostLobby;
+    private Lobby currentLobby;
     private float heartbeatTimer;
     private string playerName;
+    private bool isHost = false;
 
     private async void Start()
     {
-        await UnityServices.InitializeAsync();
-
-        AuthenticationService.Instance.SignedIn += () =>
+        if (Instance == null)
         {
-            Debug.Log($"Zalogowano jako: {AuthenticationService.Instance.PlayerId}");
-        };
+            Instance = this;
+        }
 
-        await AuthenticationService.Instance.SignInAnonymouslyAsync();
+        // Poczekaj na autoryzację gracza przed kontynuowaniem
+        if (TestRelay.Instance != null)
+        {
+            await TestRelay.Instance.WaitForAuthentication();
+        }
 
         playerName = "Gracz" + Random.Range(1, 1000);
         Debug.Log("Nazwa gracza: " + playerName);
     }
-    //PLACEHOLDER FUNKCJE DO TESTOWANIA LOBBY WYJĄĆ W PRZYSZŁOŚCI \/
+
     private void Update()
     {
+        // Placeholder inputy do testowania funkcji lobby
+        // C - Create Lobby (Host)
         if (Input.GetKeyDown(KeyCode.C))
         {
             CreateLobby();
         }
+        // L - List available lobbies
         if (Input.GetKeyDown(KeyCode.L))
         {
             ListLobbies();
         }
+        // J - Join lobby by code (for testing)
         if (Input.GetKeyDown(KeyCode.J))
         {
             JoinLobbyByCode("test");
         }
+        // Q - Quick join any available lobby
         if (Input.GetKeyDown(KeyCode.Q))
         {
             QuickJoinLobby();
         }
+        // E - Leave current lobby
         if (Input.GetKeyDown(KeyCode.E))
         {
             LeaveLobby();
         }
+        // P - Print current players in lobby
         if (Input.GetKeyDown(KeyCode.P))
         {
-            PrintPlayers(hostLobby);
+            PrintPlayers(currentLobby);
         }
-        //PLACEHOLDER FUNKCJE DO TESTOWANIA LOBBY WYJĄĆ W PRZYSZŁOŚCI /\
+        // G - Start game (Host only) - Initiates relay and loads gameplay scene
+        if (Input.GetKeyDown(KeyCode.G))
+        {
+            if (isHost && currentLobby != null)
+            {
+                LobbyRelayManager.Instance.HostStartGame(currentLobby);
+            }
+            else
+            {
+                Debug.LogWarning("Tylko host może rozpocząć grę!");
+            }
+        }
 
         HandleLobbyHeartbeat();
     }
@@ -65,16 +88,20 @@ public class TestLobby : MonoBehaviour
         if (hostLobby != null)
         {
             heartbeatTimer += Time.deltaTime;
-            if (heartbeatTimer < 0f)
+            if (heartbeatTimer >= 15f)
             {
-                float heartbeatTimerMax = 15f;
-                heartbeatTimer = heartbeatTimerMax;
-
-                await LobbyService.Instance.SendHeartbeatPingAsync(hostLobby.Id);
+                heartbeatTimer = 0f;
+                try
+                {
+                    await LobbyService.Instance.SendHeartbeatPingAsync(hostLobby.Id);
+                }
+                catch (LobbyServiceException e)
+                {
+                    Debug.LogError("Błąd przy heartbeat: " + e);
+                }
             }
         }
     }
-
 
     private async void CreateLobby()
     {
@@ -86,15 +113,17 @@ public class TestLobby : MonoBehaviour
             {
                 IsPrivate = false,
                 Player = GetPlayer(),
-                 Data = new Dictionary<string, DataObject>
-                 {
-                     {"NumberOfRounds", new DataObject(DataObject.VisibilityOptions.Public, "5", DataObject.IndexOptions.S1) }
-                 }
+                Data = new Dictionary<string, DataObject>
+                {
+                    { "NumberOfRounds", new DataObject(DataObject.VisibilityOptions.Public, "5", DataObject.IndexOptions.S1) }
+                }
             };
 
             Lobby lobby = await LobbyService.Instance.CreateLobbyAsync(LobbyName, MaxPlayers, createLobbyOptions);
 
-             hostLobby = lobby;
+            hostLobby = lobby;
+            currentLobby = lobby;
+            isHost = true;
 
             Debug.Log("Stworzyłem lobby: " + lobby.Name);
         }
@@ -130,7 +159,7 @@ public class TestLobby : MonoBehaviour
         }
         catch (LobbyServiceException e)
         {
-            Debug.LogError("Błąd przy tworzeniu lobby: " + e);
+            Debug.LogError("Błąd przy liście lobby: " + e);
         }
     }
 
@@ -138,7 +167,9 @@ public class TestLobby : MonoBehaviour
     {
         try
         {
-            await Lobbies.Instance.JoinLobbyByCodeAsync(lobbyCode);
+            Lobby joinedLobby = await Lobbies.Instance.JoinLobbyByCodeAsync(lobbyCode);
+            currentLobby = joinedLobby;
+            isHost = false;
 
             Debug.Log("Dołączyłem do lobby: " + lobbyCode);
         }
@@ -156,9 +187,11 @@ public class TestLobby : MonoBehaviour
             {
                 Player = GetPlayer()
             };
-            Lobby joinedLobby =  await Lobbies.Instance.QuickJoinLobbyAsync();
+            Lobby joinedLobby = await Lobbies.Instance.QuickJoinLobbyAsync(quickJoinLobbyOptions);
+            currentLobby = joinedLobby;
+            isHost = false;
 
-            Debug.Log("Dołączyłem do lobby pierwszego lobby ");
+            Debug.Log("Dołączyłem do lobby " + joinedLobby.Name);
 
             PrintPlayers(joinedLobby);
         }
@@ -172,11 +205,13 @@ public class TestLobby : MonoBehaviour
     {
         try
         {
-            if (hostLobby != null)
+            if (currentLobby != null)
             {
-                await LobbyService.Instance.RemovePlayerAsync(hostLobby.Id, AuthenticationService.Instance.PlayerId);
-                Debug.Log("Opuszczono lobby: " + hostLobby.Name);
+                await LobbyService.Instance.RemovePlayerAsync(currentLobby.Id, AuthenticationService.Instance.PlayerId);
+                Debug.Log("Opuszczono lobby: " + currentLobby.Name);
+                currentLobby = null;
                 hostLobby = null;
+                isHost = false;
             }
             else
             {
@@ -188,14 +223,15 @@ public class TestLobby : MonoBehaviour
             Debug.LogError("Błąd przy opuszczaniu lobby: " + e);
         }
     }
+
     private Player GetPlayer()
     {
         return new Player
         {
             Data = new Dictionary<string, PlayerDataObject>
-                    {
-                        { "PlayerName", new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, playerName) }
-                    }
+            {
+                { "PlayerName", new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, playerName) }
+            }
         };
     }
 
@@ -209,4 +245,9 @@ public class TestLobby : MonoBehaviour
             Debug.Log("Gracz: " + player.Data["PlayerName"].Value + " (ID: " + player.Id + ")");
         }
     }
+
+    // Publiczny dostęp do aktualnego lobby i statusu hosta
+    public Lobby GetCurrentLobby() => currentLobby;
+    public bool IsHost() => isHost;
+    public string GetPlayerName() => playerName;
 }
