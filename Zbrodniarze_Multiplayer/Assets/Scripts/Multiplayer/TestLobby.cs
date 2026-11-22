@@ -164,7 +164,7 @@ public class TestLobby : MonoBehaviour
                 Data = new Dictionary<string, DataObject>
                 {
                     { "NumberOfRounds", new DataObject(DataObject.VisibilityOptions.Public, "5", DataObject.IndexOptions.S1) },
-                    { "RelayJoinCode", new DataObject(DataObject.VisibilityOptions.Public, "", DataObject.IndexOptions.S1) }
+                    { "RelayJoinCode", new DataObject(DataObject.VisibilityOptions.Public, "", DataObject.IndexOptions.S2) }  // Changed to S2
                 }
             };
 
@@ -312,7 +312,7 @@ public class TestLobby : MonoBehaviour
             {
                 Data = new Dictionary<string, DataObject>
                 {
-                    { "RelayJoinCode", new DataObject(DataObject.VisibilityOptions.Public, relayCode, DataObject.IndexOptions.S1) }
+                    { "RelayJoinCode", new DataObject(DataObject.VisibilityOptions.Public, relayCode, DataObject.IndexOptions.S2) }  // S2
                 }
             };
 
