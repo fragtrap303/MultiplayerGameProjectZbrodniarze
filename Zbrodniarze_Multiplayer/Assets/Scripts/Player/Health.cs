@@ -3,6 +3,9 @@ using Unity.Netcode;
 
 public class Health : NetworkBehaviour
 {
+    public GameObject[] joints;
+    public Animator anim;
+
     [SerializeField] private float maxHealth = 100f;
 
     private readonly NetworkVariable<float> currentHealth = new NetworkVariable<float>();
@@ -13,6 +16,11 @@ public class Health : NetworkBehaviour
     {
         playerRenderers = GetComponentsInChildren<Renderer>(true);
         playerColliders = GetComponentsInChildren<Collider>(true);
+
+        foreach (GameObject joint in joints)
+        {
+            joint.GetComponent<Rigidbody>().isKinematic = true;
+        }
     }
 
     public override void OnNetworkSpawn()
@@ -51,6 +59,11 @@ public class Health : NetworkBehaviour
     {
         Debug.Log($"{gameObject.name} umarł i nie żyje.");
         ApplyDeathState(true);
+        anim.enabled = false;
+        foreach (GameObject joint in joints)
+        {
+            joint.GetComponent<Rigidbody>().isKinematic = false;
+        }
     }
 
     private void OnHealthChanged(float oldHealth, float newHealth)
@@ -63,15 +76,16 @@ public class Health : NetworkBehaviour
 
     private void ApplyDeathState(bool isDead)
     {
-        foreach (Renderer playerRenderer in playerRenderers)
-        {
-            playerRenderer.enabled = !isDead;
-        }
+        // foreach (Renderer playerRenderer in playerRenderers)
+        // {
+        //     playerRenderer.enabled = !isDead;
+        // }
 
-        foreach (Collider playerCollider in playerColliders)
-        {
-            playerCollider.enabled = !isDead;
-        }
+        // foreach (Collider playerCollider in playerColliders)
+        // {
+        //     playerCollider.enabled = !isDead;
+        // }
+        Debug.Log("kurwa nie żyje");
     }
 
     public void Respawn()

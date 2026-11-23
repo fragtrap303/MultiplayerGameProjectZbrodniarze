@@ -174,10 +174,22 @@ namespace EasyPeasyFirstPersonController
             else if (movement.x != 0f)
                 targetBlend = movement.x;
             else
-                targetBlend = 0.5f;
+                targetBlend = 0f;
+
+            if (targetBlend != 0f && Input.GetKey(KeyCode.LeftShift) && !Input.GetKey(KeyCode.LeftControl))
+            {
+                targetBlend *= 2;
+            }
+
+            if (Input.GetKey(KeyCode.LeftControl))
+                playerAnimator.SetBool("isCrouching", true);
+            else
+                playerAnimator.SetBool("isCrouching", false);
             
             playerAnimator.SetFloat("Blend", targetBlend, 0.1f, Time.deltaTime);
             FPSAnimator.SetFloat("Blend", targetBlend, 0.1f, Time.deltaTime);
+
+            Debug.Log(targetBlend);
 
             currentState.UpdateState();
             HandleRotation();
