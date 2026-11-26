@@ -71,14 +71,14 @@ public class BaseShooting : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        if (IsServer)
+        if (IsOwner)  
         {
             currentAmmo = magazineSize;
             reserveAmmo = startingReserveAmmo;
             NotifyAmmoChanged();
         }
-
     }
+
 
     private void HandleSingleFire()
     {
@@ -133,14 +133,8 @@ public class BaseShooting : NetworkBehaviour
 
         for (int i = 0; i < projectilesPerShot; i++)
         {
-            if (playerAnimator != null)
-            {
-                FPSAnimator.SetTrigger("didShoot");
-                playerAnimator.SetTrigger("didShoot");
-            }
-                
-
-
+            // Trigger shoot animation on all clients
+            PlayShootAnimationRpc();
             ShootProjectile();
         }
 
@@ -150,10 +144,18 @@ public class BaseShooting : NetworkBehaviour
         }
     }
 
+    [Rpc(SendTo.Everyone)]
+    private void PlayShootAnimationRpc()
+    {
+        if (IsOwner)
+            FPSAnimator.SetTrigger("didShoot");
+        else
+            playerAnimator.SetTrigger("didShoot");
+    }
+
     private void ShootProjectile()
     {
         Vector3 direction = GetShootDirection();
-
         ShootProjectileServerRpc(firePoint.position, direction);
     }
 
@@ -192,6 +194,7 @@ public class BaseShooting : NetworkBehaviour
 
         return direction.normalized;
     }
+
     [ServerRpc]
     private void RequestReloadServerRpc()
     {
@@ -213,12 +216,8 @@ public class BaseShooting : NetworkBehaviour
         isReloading = true;
         ReloadStateChanged?.Invoke(true);
 
-        if (playerAnimator != null)
-        {
-            FPSAnimator.SetTrigger("didReload");
-            playerAnimator.SetTrigger("didReload");
-        }
-           
+        // Trigger reload animation on all clients
+        PlayReloadAnimationRpc();
 
         yield return new WaitForSeconds(reloadTime);
 
@@ -232,5 +231,14 @@ public class BaseShooting : NetworkBehaviour
         
         isReloading = false;
         ReloadStateChanged?.Invoke(false);
+    }
+
+    [Rpc(SendTo.Everyone)]
+    private void PlayReloadAnimationRpc()
+    {
+        if (IsOwner)
+            FPSAnimator.SetTrigger("didReload");
+        else
+            playerAnimator.SetTrigger("didReload");
     }
 }

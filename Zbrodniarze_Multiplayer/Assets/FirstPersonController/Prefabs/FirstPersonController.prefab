@@ -2199,6 +2199,7 @@ GameObject:
   - component: {fileID: 8417411213949275117}
   - component: {fileID: 7814669581202044723}
   - component: {fileID: 8723287007014527743}
+  - component: {fileID: 7211104632340319491}
   m_Layer: 2
   m_Name: FirstPersonController
   m_TagString: Untagged
@@ -2263,7 +2264,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1969618205
+  GlobalObjectIdHash: 224490091
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -2431,6 +2432,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Health
   ShowTopMostFoldoutHeaderGroup: 1
+  joints: []
+  anim: {fileID: 0}
   maxHealth: 100
 --- !u!114 &8723287007014527743
 MonoBehaviour:
@@ -2445,6 +2448,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::KnockbackReceiver
   knockbackDecay: 8
+--- !u!114 &7211104632340319491
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9156347144040445547}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 58502e6bfd27a97428383c1c3adffe8f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AnimationVisibilityController
+  ShowTopMostFoldoutHeaderGroup: 1
+  firstPersonHands: {fileID: 104646187295597121}
+  thirdPersonBody: {fileID: 4427362054449074667}
+  fpsAnimator: {fileID: 904609398393037518}
+  tpAnimator: {fileID: 2358216297517720406}
 --- !u!1 &9156347144365898844
 GameObject:
   m_ObjectHideFlags: 0
@@ -2699,7 +2719,7 @@ MonoBehaviour:
   TransitionStateInfoList:
   - IsCrossFadeExit: 0
     Layer: 0
-    OriginatingState: -453240694
+    OriginatingState: -259196579
     DestinationState: 125937960
     TransitionDuration: 0.25796652
     TriggerNameHash: -2028384605
@@ -2750,6 +2770,10 @@ MonoBehaviour:
       NameHash: 1124957600
       Synchronize: 1
       ParameterType: 9
+    - name: isCrouching
+      NameHash: 1035320983
+      Synchronize: 1
+      ParameterType: 4
   AnimatorParametersExpanded: 0
 --- !u!4 &4999551776259829192 stripped
 Transform:
