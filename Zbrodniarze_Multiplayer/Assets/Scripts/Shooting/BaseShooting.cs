@@ -15,6 +15,7 @@ public class BaseShooting : NetworkBehaviour
     [Header("Shooting")]
     [SerializeField] private float fireRate = 0.2f;
     [SerializeField] private int burstCount = 3;
+    [SerializeField] private float burstCooldown = 0.4f;
     [SerializeField] private int projectilesPerShot = 1;
     [SerializeField] private float spread = 0f;
 
@@ -28,6 +29,7 @@ public class BaseShooting : NetworkBehaviour
     [Header("References")]
     [SerializeField] private Animator playerAnimator;
     [SerializeField] private Animator FPSAnimator;
+    [SerializeField] private WeaponConfig weaponConfig;   
 
     private float nextFireTime;
     private bool isBursting;
@@ -38,14 +40,15 @@ public class BaseShooting : NetworkBehaviour
     public int ReserveAmmo => reserveAmmo;
     public int MagazineSize => magazineSize;
     public bool IsReloading => isReloading;
+    public WeaponConfig Weapon => weaponConfig;
 
     public event System.Action<int, int> AmmoChanged;
     public event System.Action<bool> ReloadStateChanged;
 
     private void Update()
     {
-        if(!IsOwner) return;
-       
+        if (!IsOwner) return;
+
         if (Input.GetKeyDown(reloadKey))
         {
             RequestReloadServerRpc();
@@ -71,7 +74,7 @@ public class BaseShooting : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        if (IsOwner)  
+        if (IsOwner)
         {
             currentAmmo = magazineSize;
             reserveAmmo = startingReserveAmmo;
@@ -79,6 +82,31 @@ public class BaseShooting : NetworkBehaviour
         }
     }
 
+    
+    public void ApplyWeapon(WeaponConfig w)
+    {
+        StopAllCoroutines();   
+        isBursting = false;
+        isReloading = false;
+
+        fireMode = w.fireMode;
+        fireRate = w.fireRate;
+        burstCount = w.burstCount;
+        burstCooldown = w.burstCooldown;
+        projectilesPerShot = w.projectilesPerShot;
+        spread = w.spread;
+        projectileSpeed = w.projectileSpeed;
+        magazineSize = w.magazineSize;
+        startingReserveAmmo = w.startingReserveAmmo;
+        reloadTime = w.reloadTime;
+
+        currentAmmo = magazineSize;
+        reserveAmmo = startingReserveAmmo;
+        nextFireTime = 0f;
+
+        NotifyAmmoChanged();
+        ReloadStateChanged?.Invoke(false);
+    }
 
     private void HandleSingleFire()
     {
@@ -114,12 +142,18 @@ public class BaseShooting : NetworkBehaviour
 
         for (int i = 0; i < burstCount; i++)
         {
+            
+            if (isReloading || currentAmmo <= 0)
+                break;
+
             Shoot();
 
-            yield return new WaitForSeconds(fireRate);
+            
+            if (i < burstCount - 1)
+                yield return new WaitForSeconds(fireRate);
         }
 
-        nextFireTime = Time.time;
+        nextFireTime = Time.time + burstCooldown;
         isBursting = false;
     }
 
@@ -133,7 +167,6 @@ public class BaseShooting : NetworkBehaviour
 
         for (int i = 0; i < projectilesPerShot; i++)
         {
-            // Trigger shoot animation on all clients
             PlayShootAnimationRpc();
             ShootProjectile();
         }
@@ -167,6 +200,10 @@ public class BaseShooting : NetworkBehaviour
             position,
             Quaternion.LookRotation(direction)
         );
+
+        
+        if (weaponConfig != null && weaponConfig.damage > 0f)
+            projectile.Configure(weaponConfig);
 
         projectile.SetShooter(NetworkObject);
         projectile.NetworkObject.Spawn();
@@ -216,7 +253,6 @@ public class BaseShooting : NetworkBehaviour
         isReloading = true;
         ReloadStateChanged?.Invoke(true);
 
-        // Trigger reload animation on all clients
         PlayReloadAnimationRpc();
 
         yield return new WaitForSeconds(reloadTime);
@@ -226,9 +262,9 @@ public class BaseShooting : NetworkBehaviour
 
         currentAmmo += ammoToLoad;
         reserveAmmo -= ammoToLoad;
-       
+
         NotifyAmmoChanged();
-        
+
         isReloading = false;
         ReloadStateChanged?.Invoke(false);
     }

@@ -34,6 +34,21 @@ public class Projectile : NetworkBehaviour
         shooter = shooterObject;
     }
 
+    public void Configure(WeaponConfig w)
+    {
+        damage = w.damage;
+        lifetime = w.lifetime;
+        maxBounces = w.maxBounces;
+        explosionEnabled = w.explosionEnabled;
+        explosionRadius = w.explosionRadius;
+        explosionDamage = w.explosionDamage;
+        knockbackEnabled = w.knockbackEnabled;
+        knockbackForce = w.knockbackForce;
+        homingEnabled = w.homingEnabled;
+        homingRange = w.homingRange;
+        homingStrength = w.homingStrength;
+    }
+
     public override void OnNetworkSpawn()
     {
         rb = GetComponent<Rigidbody>();
@@ -68,10 +83,12 @@ public class Projectile : NetworkBehaviour
             return;
 
         Health health = collision.gameObject.GetComponentInParent<Health>();
+        Health directHit = null;
 
-        // Bezpoœrednie obra¿enia
+       
         if (health != null && health.NetworkObject != shooter)
         {
+            directHit = health;
             health.TakeDamage(damage);
 
             if (knockbackEnabled)
@@ -80,13 +97,13 @@ public class Projectile : NetworkBehaviour
             }
         }
 
-        // Eksplozja
+       
         if (explosionEnabled)
         {
-            Explode();
+            Explode(directHit);
         }
 
-        // Odbicie
+       
         if (currentBounces < maxBounces)
         {
             Bounce(collision);
@@ -114,27 +131,26 @@ public class Projectile : NetworkBehaviour
 
         rb.linearVelocity = reflectedDirection * speed;
 
-        transform.rotation = Quaternion.LookRotation(
-            reflectedDirection
-        );
+        transform.rotation = Quaternion.LookRotation(reflectedDirection);
     }
 
-    private void Explode()
+    private void Explode(Health alreadyHit)
     {
-        Collider[] hits = Physics.OverlapSphere(
-            transform.position,
-            explosionRadius
-        );
+        Collider[] hits = Physics.OverlapSphere(transform.position, explosionRadius);
+        var damaged = new System.Collections.Generic.HashSet<Health>();
 
         foreach (Collider hit in hits)
         {
             Health health = hit.GetComponentInParent<Health>();
 
-            if (health == null)
+            if (health == null || health == alreadyHit)
                 continue;
 
-            // Nie ranimy strzelaj¹cego
             if (health.NetworkObject == shooter)
+                continue;
+
+           
+            if (!damaged.Add(health))
                 continue;
 
             health.TakeDamage(explosionDamage);
@@ -145,6 +161,7 @@ public class Projectile : NetworkBehaviour
             }
         }
     }
+
     private void ApplyKnockback(GameObject target)
     {
         KnockbackReceiver knockbackReceiver =
@@ -153,13 +170,9 @@ public class Projectile : NetworkBehaviour
         if (knockbackReceiver == null)
             return;
 
-        Vector3 direction =
-            target.transform.position - transform.position;
+        Vector3 direction = target.transform.position - transform.position;
 
-        knockbackReceiver.ApplyKnockback(
-            direction,
-            knockbackForce
-        );
+        knockbackReceiver.ApplyKnockback(direction, knockbackForce);
     }
 
     private void ApplyExplosionKnockback(GameObject target)
@@ -170,31 +183,24 @@ public class Projectile : NetworkBehaviour
         if (knockbackReceiver == null)
             return;
 
-        Vector3 direction =
-            target.transform.position - transform.position;
+        Vector3 direction = target.transform.position - transform.position;
 
         float distance = direction.magnitude;
 
         if (distance <= 0.01f)
             return;
 
-        float forceMultiplier =
-            1f - Mathf.Clamp01(distance / explosionRadius);
+        float forceMultiplier = 1f - Mathf.Clamp01(distance / explosionRadius);
 
-        knockbackReceiver.ApplyKnockback(
-            direction,
-            knockbackForce * forceMultiplier
-        );
+        knockbackReceiver.ApplyKnockback(direction, knockbackForce * forceMultiplier);
     }
+
     private void HandleHoming()
     {
         if (rb == null)
             return;
 
-        Collider[] hits = Physics.OverlapSphere(
-            transform.position,
-            homingRange
-        );
+        Collider[] hits = Physics.OverlapSphere(transform.position, homingRange);
 
         NetworkObject closestTarget = null;
         float closestDistance = Mathf.Infinity;
@@ -209,10 +215,7 @@ public class Projectile : NetworkBehaviour
             if (health.NetworkObject == shooter)
                 continue;
 
-            float distance = Vector3.Distance(
-                transform.position,
-                health.transform.position
-            );
+            float distance = Vector3.Distance(transform.position, health.transform.position);
 
             if (distance < closestDistance)
             {
@@ -224,9 +227,7 @@ public class Projectile : NetworkBehaviour
         if (closestTarget == null)
             return;
 
-        Vector3 direction = (
-            closestTarget.transform.position - transform.position
-        ).normalized;
+        Vector3 direction = (closestTarget.transform.position - transform.position).normalized;
 
         Vector3 newDirection = Vector3.Lerp(
             rb.linearVelocity.normalized,
@@ -238,9 +239,7 @@ public class Projectile : NetworkBehaviour
 
         rb.linearVelocity = newDirection.normalized * speed;
 
-        transform.rotation = Quaternion.LookRotation(
-            rb.linearVelocity
-        );
+        transform.rotation = Quaternion.LookRotation(rb.linearVelocity);
     }
 
     private void Despawn()
